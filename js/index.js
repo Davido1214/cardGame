@@ -1,37 +1,58 @@
 const pokedex = document.getElementById("pokedex")
+const pokemonCount = 12; // Define pokemonCount at the top-level scope
+
+const fetchSinglePokemon = (pokemonId) => {
+    const url = `https://pokeapi.co/api/v2/pokemon/${pokemonId}`;
+    return fetch(url)
+    .then(res=> {
+        return res.json();
+    })
+    .then(data => {
+        const rngSprite = () => {
+            const sprites = Object.values(data.sprites);
+            //pokemon["image"] = sprites;
+            // if the image is null randomize again
+            const randomIndex = Math.floor(Math.random() * sprites.length);
+
+            // rng sprite result
+            let setSprite = sprites[randomIndex];
+
+            //check if null
+            if (setSprite === null) {
+                return rngSprite();
+            }
+            else if (randomIndex >= 7) {
+                return rngSprite();
+            }
+            else {
+                return setSprite;
+            }
+
+
+        };
+
+        const generateRandomPokemon = () => {
+            const localStorageCards = getSavedPokemonCards();
+            const missingPokemonCount = pokemonCount - localStorageCards.length;
+            const pokemonPromises = [];
+          
+            for (let i = 0; i < missingPokemonCount; i++) {
+              const randomPokemonId = Math.floor(Math.random() * 898) + 1;
+              pokemonPromises.push(fetchSinglePokemon(randomPokemonId));
+            }
+          
+            return Promise.all(pokemonPromises)
+              .then((newlyGeneratedPokemon) => {
+                const allPokemon = [...localStorageCards, ...newlyGeneratedPokemon];
+                return allPokemon;
+              })
+              .catch((error) => {
+                console.error("Error fetching random Pokemon data:", error);
+                // Handle the error gracefully, show a user-friendly message, etc.
+              });
+          };
   
 const fetchPokemon = () => {
-    const pokemonCount = 12
-    
-    const fetchSinglePokemon = (pokemonId) => {
-        const url = `https://pokeapi.co/api/v2/pokemon/${pokemonId}`;
-        return fetch(url)
-        .then(res=> {
-            return res.json();
-        })
-        .then(data => {
-            const rngSprite = () => {
-                const sprites = Object.values(data.sprites);
-                //pokemon["image"] = sprites;
-                // if the image is null randomize again
-                const randomIndex = Math.floor(Math.random() * sprites.length);
-    
-                // rng sprite result
-                let setSprite = sprites[randomIndex];
-    
-                //check if null
-                if (setSprite === null) {
-                    return rngSprite();
-                }
-                else if (randomIndex >= 7) {
-                    return rngSprite();
-                }
-                else {
-                    return setSprite;
-                }
-    
-    
-            };
     
             const generateWeightedRandomNumber = () => {
                 const maxNumber = 100;
@@ -111,8 +132,9 @@ const fetchPokemon = () => {
                     pokemon.rarity = "Mythic"
                 }
             }
+            
 
-       rngMoves()
+      // rngMoves()
        rarity()
     
 
@@ -230,42 +252,46 @@ const fetchPokemon = () => {
         };
 
        
-
-        
+        localStorage.setItem(`pokemon_${pokemon.id}`, JSON.stringify(pokemon));  
             
     };
-
-
-
-            displayPokemon()
-        });
-    }
+        displayPokemon()
+        };
+    
 
 
     // Generate a weighted random number
-  const generateRandomPokemon = () => {
-    const pokemonPromises = [];
-
-    for (let i = 0; i < pokemonCount; i++) {
-      const randomPokemonId = Math.floor(Math.random() * 898) + 1; // Generate a random Pokémon ID between 1 and 898
-      pokemonPromises.push(fetchSinglePokemon(randomPokemonId));
-    }
-
-    return Promise.all(pokemonPromises);
-  };
+ 
 
 generateRandomPokemon().then((pokemonArray) => {
     //console.log
 })
-} 
 
 
+const getSavedPokemonCards = () => {
+    const savedCards = [];
+    for (let i = 1; i <= 898; i++) {
+      const localStoragePokemon = localStorage.getItem(`pokemon_${i}`);
+      if (localStoragePokemon) {
+        savedCards.push(JSON.parse(localStoragePokemon));
+      }
+    }
+    return savedCards;
+  };
+  
   
 
 const mainBtn = document.getElementById("mainBtn");
-mainBtn.addEventListener("click", function(){
-    fetchPokemon();
-    mainBtn.remove();
+
+mainBtn.addEventListener("click", function () {
+  generateRandomPokemon().then((pokemonArray) => {
+    // Clear existing cards from the "pokedex" container
+    pokedex.innerHTML = "";
+
+    // Display the Pokemon cards in the "pokedex" container
+    for (const pokemon of pokemonArray) {
+      displayPokemon(pokemon);
+    }
+  });
 });
-
-
+})}
